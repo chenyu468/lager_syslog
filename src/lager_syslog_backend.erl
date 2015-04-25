@@ -27,6 +27,7 @@
 
 -record(state, {level, handle, id, formatter,format_config}).
 
+
 -include_lib("lager/include/lager.hrl").
 
 -define(DEFAULT_FORMAT,["[", severity, "] ",
@@ -38,6 +39,14 @@
                 {line, [":",line], ""}], ""},
         " ", message]).
 
+-record(lager_msg,{
+        destinations :: list(),
+        metadata :: [tuple()],
+        severity :: lager:log_level(),
+        datetime :: {string(), string()},
+        timestamp :: erlang:timestamp(),
+        message :: list()
+    }).
 
 %% @private
 init([Ident, Facility, Level]) ->
@@ -94,7 +103,8 @@ handle_event({log, Level, {_Date, _Time}, [_LevelStr, Location, Message]},
 handle_event({log, Message}, #state{level=Level,formatter=Formatter,format_config=FormatConfig} = State) ->
     case lager_util:is_loggable(Message, Level, State#state.id) of
         true ->
-            syslog:log(State#state.handle, convert_level(lager_msg:severity_as_int(Message)), [Formatter:format(Message, FormatConfig)]),
+            syslog:log(State#state.handle, convert_level(lager_msg:severity_as_int(Message)), 
+                       [Formatter:format(set_message(Message), FormatConfig)]),
             {ok, State};
         false ->
             {ok, State}
@@ -139,3 +149,7 @@ parse_level(Level) ->
             lager_util:level_to_num(Level)
     end.
 
+set_message(A = #lager_msg{message = Message}) when is_tuple(Message)->
+    A;
+set_message(A = #lager_msg{message = Message}) ->
+    A#lager_msg{message = "\"" ++ Message ++ "\""}.
