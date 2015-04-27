@@ -149,7 +149,18 @@ parse_level(Level) ->
             lager_util:level_to_num(Level)
     end.
 
-set_message(A = #lager_msg{message = Message}) when is_tuple(Message)->
-    A;
+%%---------------
+%% 接收到的是json消息，不用进行转换
+%%---------------
+set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
+    io:format("_156:~n\t~ts~n",[Message]),
+    A#lager_msg{message = Message};
+
+%% set_message(A = #lager_msg{message = Message}) when is_tuple(Message)->
+%%     A;
+
+%%----------------
+%% 接收到普通消息，不用进行转换，直接加上引号
+%%----------------
 set_message(A = #lager_msg{message = Message}) ->
-    A#lager_msg{message = "\"" ++ Message ++ "\""}.
+    A#lager_msg{message = hanoch_json2:encode(love_misc:to_binary(Message))}.
