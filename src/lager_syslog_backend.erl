@@ -24,7 +24,7 @@
         code_change/3]).
 
 -export([config_to_id/1]).
--export([json_encode_string_unicode/1]).
+%% -export([json_encode_string_unicode/1]).
 
 -record(state, {level, handle, id, formatter,format_config}).
 
@@ -158,86 +158,12 @@ set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
     io:format("_157:1~ts~n2~ts~n",[Message,Data]),
     A#lager_msg{message = Data};
 
-%% set_message(A = #lager_msg{message = Message}) when is_tuple(Message)->
-%%     A;
-
 %%----------------
 %% 接收到普通消息，不用进行转换，直接加上引号
 %%----------------
 set_message(A = #lager_msg{message = Message}) ->
-    D = json_encode_string_unicode(Message),
-    io:format("_169:1.~n\t~ts~n2.\t~ts~n",[Message,D]),
-    A#lager_msg{message = D }.
+    D = [{'data',love_misc:to_binary(Message)}],
+    M_a = hanoch_json2:encode(D),
+    io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
+    A#lager_msg{message = M_a }.
 
--define(Q, $\").
-
-json_encode_string_unicode(A)->
-    json_encode_string_unicode(A,[$\"]).
-
-json_encode_string_unicode([],Acc) ->
-    lists:reverse([$\" | Acc]);
-json_encode_string_unicode([C | Cs],Acc) ->
-    Acc1 = case C of
-               ?Q ->
-                   [?Q, $\\ | Acc];
-               %% Escaping solidus is only useful when trying to protect
-               %% against "</script>" injection attacks which are only
-               %% possible when JSON is inserted into a HTML document
-               %% in-line. mochijson2 does not protect you from this, so
-               %% if you do insert directly into HTML then you need to
-               %% uncomment the following case or escape the output of encode.
-               %%
-               %% $/ ->
-               %%    [$/, $\\ | Acc];
-               %%
-               $\\ ->
-                   [$\\, $\\ | Acc];
-               $\b ->
-                   [$b, $\\ | Acc];
-               $\f ->
-                   [$f, $\\ | Acc];
-               $\n ->
-                   [$n, $\\ | Acc];
-               $\r ->
-                   [$r, $\\ | Acc];
-               $\t ->
-                   [$t, $\\ | Acc];
-               ${ ->
-                   [${, $\\ | Acc];
-               $} ->
-                   [$}, $\\ | Acc];
-               $[ ->
-                   [$[, $\\ | Acc];
-               $] ->
-                   [$], $\\ | Acc];
-               $: ->
-                   [$:, $\\ | Acc];
-               $, ->
-                   [$,, $\\ | Acc];
-               %% $' ->
-               %%     [?Q, $\\ |Acc];
-               C when C >= 0, C < $\s ->
-                   [unihex(C) | Acc];
-               C when C >= 16#7f, C =< 16#10FFFF ->
-                   [xmerl_ucs:to_utf8(C) | Acc];
-               C when C < 16#7f ->
-                   [C | Acc];
-               _ ->
-                   Acc
-           end,
-    json_encode_string_unicode(Cs, Acc1).
-
-hexdigit(C) when C >= 0, C =< 9 ->
-    C + $0;
-hexdigit(C) when C =< 15 ->
-    C + $a - 10.
-
-unihex(C) when C < 16#10000 ->
-    <<D3:4, D2:4, D1:4, D0:4>> = <<C:16>>,
-    Digits = [hexdigit(D) || D <- [D3, D2, D1, D0]],
-    [$\\, $u | Digits];
-unihex(C) when C =< 16#10FFFF ->
-    N = C - 16#10000,
-    S1 = 16#d800 bor ((N bsr 10) band 16#3ff),
-    S2 = 16#dc00 bor (N band 16#3ff),
-    [unihex(S1), unihex(S2)].
