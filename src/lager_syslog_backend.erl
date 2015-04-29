@@ -155,7 +155,7 @@ parse_level(Level) ->
 %%---------------
 set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
     Data = love_misc:trim(Message),
-    io:format("_157:1~ts~n2~ts~n",[Message,Data]),
+    %% io:format("_157:1~ts~n2~ts~n",[Message,Data]),
     A#lager_msg{message = Data};
 
 %%----------------
@@ -164,6 +164,6 @@ set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
 set_message(A = #lager_msg{message = Message}) ->
     D = [{'data',love_misc:to_binary(Message)}],
     M_a = hanoch_json2:encode(D),
-    io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
+    %% io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
     A#lager_msg{message = M_a }.
 
