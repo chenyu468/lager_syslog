@@ -154,7 +154,8 @@ parse_level(Level) ->
 %% 接收到的是json消息，不用进行转换
 %%---------------
 set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
-    Data = love_misc:trim(Message),
+    Message_a = re:replace(Message,"_","*",[{return,list}]),
+    Data = love_misc:trim(Message_a),
     %% io:format("_157:1~ts~n2~ts~n",[Message,Data]),
     A#lager_msg{message = Data};
 
@@ -162,7 +163,8 @@ set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
 %% 接收到普通消息，不用进行转换，直接加上引号
 %%----------------
 set_message(A = #lager_msg{message = Message}) ->
-    D = [{'data',love_misc:to_binary(Message)}],
+    Message_a = re:replace(Message,"_","*",[{return,list}]),
+    D = [{'data',love_misc:to_binary(Message_a)}],
     M_a = hanoch_json2:encode(D),
     %% io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
     A#lager_msg{message = M_a }.
