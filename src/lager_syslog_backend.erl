@@ -98,15 +98,23 @@ handle_call(_Request, State) ->
 
 %% @private
 handle_event({log, Level, {_Date, _Time}, [_LevelStr, Location, Message]},
-        #state{level=LogLevel} = State) when Level =< LogLevel ->
+             #state{level=LogLevel} = State) when Level =< LogLevel ->
     syslog:log(State#state.handle, convert_level(Level), [Location, Message]),
     {ok, State};
 handle_event({log, Message}, #state{level=Level,formatter=Formatter,format_config=FormatConfig} = State) ->
     case lager_util:is_loggable(Message, Level, State#state.id) of
         true ->
-            syslog:log(State#state.handle, convert_level(lager_msg:severity_as_int(Message)), 
-                       [Formatter:format(set_message(Message), FormatConfig)]),
-            {ok, State};
+            case set_message(Message) of
+                ignore ->
+                    {ok,State};
+                _ ->
+                    syslog:log(State#state.handle, convert_level(lager_msg:severity_as_int(Message)), 
+                               [Formatter:format(set_message(Message), FormatConfig)]),
+                    {ok, State}                    
+            end;
+        %% syslog:log(State#state.handle, convert_level(lager_msg:severity_as_int(Message)), 
+        %%            [Formatter:format(set_message(Message), FormatConfig)]),
+        %% {ok, State};
         false ->
             {ok, State}
     end;
@@ -162,8 +170,19 @@ set_message(A = #lager_msg{message = "key_log_api:" ++ Message})->
 %% 接收到普通消息，不用进行转换，直接加上引号
 %%----------------
 set_message(A = #lager_msg{message = Message}) -> 
-    D = [{'data',love_misc:to_binary(Message)}],
-    M_a = hanoch_json2:encode(D),
-    %% io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
-    A#lager_msg{message = M_a }.
+    Binary = love_misc:to_binary(Message),
+    Pattern =  [<<"no need,go away connection">>],
+    case binary:match(Binary,Pattern,[]) of
+        nomatch ->
+            D = [{'data',Binary}],
+            M_a = hanoch_json2:encode(D),
+            %% io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
+            A#lager_msg{message = M_a };
+        _ ->
+            ignore
+    end.
+%% D = [{'data',love_misc:to_binary(Message)}],
+%% M_a = hanoch_json2:encode(D),
+%% %% io:format("_169:1.2.\t~ts~n",[love_misc:to_list(M_a)]),
+%% A#lager_msg{message = M_a }.
 
