@@ -53,6 +53,8 @@
 init([Ident, Facility, Level]) ->
     init([Ident, Facility, Level, {lager_default_formatter, ?DEFAULT_FORMAT}]);
 init([Ident, Facility, Level, {Formatter, FormatterConfig}]) when is_atom(Formatter) ->
+    Hostname = love_misc:get_full_host_name(),
+    put(host,Hostname),
     case application:start(syslog) of
         ok ->
             init2([Ident, Facility, Level, {Formatter, FormatterConfig}]);
