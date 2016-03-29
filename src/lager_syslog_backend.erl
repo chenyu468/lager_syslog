@@ -51,8 +51,10 @@
 
 %% @private
 init([Ident, Facility, Level]) ->
+    io:format("_54_log_level:~p",[Level]),
     init([Ident, Facility, Level, {lager_default_formatter, ?DEFAULT_FORMAT}]);
 init([Ident, Facility, Level, {Formatter, FormatterConfig}]) when is_atom(Formatter) ->
+    io:format("_57_log_level:~p",[Level]),
     Hostname = love_misc:get_full_host_name(),
     put(host,Hostname),
     case application:start(syslog) of
@@ -110,6 +112,7 @@ handle_event({log, Message}, #state{level=Level,formatter=Formatter,format_confi
                 ignore ->
                     {ok,State};
                 _ ->
+                    io:format("_115_syslog_log~n"),
                     syslog:log(State#state.handle, convert_level(lager_msg:severity_as_int(Message)), 
                                [Formatter:format(set_message(Message), FormatConfig)]),
                     {ok, State}                    
